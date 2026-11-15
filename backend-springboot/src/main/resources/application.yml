@@ -1,0 +1,24 @@
+server:
+  port: 8082
+spring:
+  application:
+    name: patientflow-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:patientflow;DB_CLOSE_DELAY=-1}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  h2:
+    console:
+      enabled: true
+camunda:
+  client:
+    mode: self-managed
+    auth:
+      method: none
+    grpc-address: ${CAMUNDA_CLIENT_GRPC_ADDRESS:http://localhost:26500}
+    rest-address: ${CAMUNDA_CLIENT_REST_ADDRESS:http://localhost:8080}
