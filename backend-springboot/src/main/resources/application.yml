@@ -1,24 +1,34 @@
 server:
   port: 8082
+
 spring:
   application:
     name: patientflow-api
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:patientflow;DB_CLOSE_DELAY=-1}
-    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
-    username: ${SPRING_DATASOURCE_USERNAME:sa}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/patientflow}
+    driver-class-name: org.postgresql.Driver
+    username: ${SPRING_DATASOURCE_USERNAME:patientflow}
+    password: ${SPRING_DATASOURCE_PASSWORD:patientflow_dev}
   jpa:
     hibernate:
       ddl-auto: update
+    open-in-view: false
     show-sql: false
-  h2:
-    console:
-      enabled: true
+
 camunda:
   client:
     mode: self-managed
     auth:
       method: none
     grpc-address: ${CAMUNDA_CLIENT_GRPC_ADDRESS:http://localhost:26500}
-    rest-address: ${CAMUNDA_CLIENT_REST_ADDRESS:http://localhost:8080}
+    rest-address: ${CAMUNDA_CLIENT_REST_ADDRESS:http://localhost:8081}
+    prefer-rest-over-grpc: false
+    worker:
+      defaults:
+        auto-complete: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

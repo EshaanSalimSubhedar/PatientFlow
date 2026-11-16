@@ -1,2 +1,90 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_patient-consent-ehr-sync" targetNamespace="http://patientflow.example"><bpmn:process id="patient-consent-ehr-sync" name="Patient Consent and EHR Sync" isExecutable="true"><bpmn:startEvent id="Start_Consent" name="Consent workflow started"><bpmn:outgoing>C1</bpmn:outgoing></bpmn:startEvent><bpmn:serviceTask id="Task_ValidateConsent" name="Validate patient consent"><bpmn:extensionElements><zeebe:taskDefinition type="validate-patient-consent" retries="3" /></bpmn:extensionElements><bpmn:incoming>C1</bpmn:incoming><bpmn:outgoing>C2</bpmn:outgoing></bpmn:serviceTask><bpmn:serviceTask id="Task_EhrSync" name="Synchronize EHR record (mock)"><bpmn:extensionElements><zeebe:taskDefinition type="sync-ehr-record" retries="3" /></bpmn:extensionElements><bpmn:incoming>C2</bpmn:incoming><bpmn:outgoing>C3</bpmn:outgoing></bpmn:serviceTask><bpmn:endEvent id="End_Consent" name="Consent and EHR sync complete"><bpmn:incoming>C3</bpmn:incoming></bpmn:endEvent><bpmn:sequenceFlow id="C1" sourceRef="Start_Consent" targetRef="Task_ValidateConsent" /><bpmn:sequenceFlow id="C2" sourceRef="Task_ValidateConsent" targetRef="Task_EhrSync" /><bpmn:sequenceFlow id="C3" sourceRef="Task_EhrSync" targetRef="End_Consent" /></bpmn:process><bpmndi:BPMNDiagram id="Diagram_Consent"><bpmndi:BPMNPlane id="Plane_Consent" bpmnElement="patient-consent-ehr-sync"><bpmndi:BPMNShape id="Start_Consent_di" bpmnElement="Start_Consent"><dc:Bounds x="100" y="150" width="36" height="36" /></bpmndi:BPMNShape><bpmndi:BPMNShape id="Task_ValidateConsent_di" bpmnElement="Task_ValidateConsent"><dc:Bounds x="220" y="130" width="150" height="80" /></bpmndi:BPMNShape><bpmndi:BPMNShape id="Task_EhrSync_di" bpmnElement="Task_EhrSync"><dc:Bounds x="470" y="130" width="150" height="80" /></bpmndi:BPMNShape><bpmndi:BPMNShape id="End_Consent_di" bpmnElement="End_Consent"><dc:Bounds x="730" y="152" width="36" height="36" /></bpmndi:BPMNShape><bpmndi:BPMNEdge id="C1_di" bpmnElement="C1"><di:waypoint x="136" y="168" /><di:waypoint x="220" y="170" /></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="C2_di" bpmnElement="C2"><di:waypoint x="370" y="170" /><di:waypoint x="470" y="170" /></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="C3_di" bpmnElement="C3"><di:waypoint x="620" y="170" /><di:waypoint x="730" y="170" /></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  id="Definitions_patient-consent-ehr-sync"
+  targetNamespace="http://patientflow.example">
+
+  <bpmn:error id="Error_ConsentNotGiven" name="Consent not given" errorCode="CONSENT_NOT_GIVEN"/>
+
+  <bpmn:process id="patient-consent-ehr-sync" name="Patient Consent and EHR Sync" isExecutable="true">
+    <bpmn:startEvent id="Start_Consent" name="Consent workflow started">
+      <bpmn:outgoing>C1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:serviceTask id="Task_ValidateConsent" name="Validate patient consent">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="validate-patient-consent" retries="3"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>C1</bpmn:incoming>
+      <bpmn:outgoing>C2</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:boundaryEvent id="Boundary_ConsentNotGiven" name="Consent not given" attachedToRef="Task_ValidateConsent" cancelActivity="true">
+      <bpmn:outgoing>C4</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_ConsentNotGiven" errorRef="Error_ConsentNotGiven"/>
+    </bpmn:boundaryEvent>
+
+    <bpmn:serviceTask id="Task_EhrSync" name="Synchronize EHR record (mock)">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="sync-ehr-record" retries="3"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>C2</bpmn:incoming>
+      <bpmn:outgoing>C3</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="End_Consent" name="Consent and EHR sync complete">
+      <bpmn:incoming>C3</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="End_ConsentDenied" name="Consent denied - EHR sync skipped">
+      <bpmn:incoming>C4</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="C1" sourceRef="Start_Consent" targetRef="Task_ValidateConsent"/>
+    <bpmn:sequenceFlow id="C2" sourceRef="Task_ValidateConsent" targetRef="Task_EhrSync"/>
+    <bpmn:sequenceFlow id="C3" sourceRef="Task_EhrSync" targetRef="End_Consent"/>
+    <bpmn:sequenceFlow id="C4" sourceRef="Boundary_ConsentNotGiven" targetRef="End_ConsentDenied"/>
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_Consent">
+    <bpmndi:BPMNPlane id="Plane_Consent" bpmnElement="patient-consent-ehr-sync">
+      <bpmndi:BPMNShape id="Start_Consent_di" bpmnElement="Start_Consent">
+        <dc:Bounds x="100" y="170" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ValidateConsent_di" bpmnElement="Task_ValidateConsent">
+        <dc:Bounds x="220" y="148" width="150" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Boundary_ConsentNotGiven_di" bpmnElement="Boundary_ConsentNotGiven">
+        <dc:Bounds x="277" y="212" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EhrSync_di" bpmnElement="Task_EhrSync">
+        <dc:Bounds x="470" y="148" width="150" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Consent_di" bpmnElement="End_Consent">
+        <dc:Bounds x="730" y="170" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_ConsentDenied_di" bpmnElement="End_ConsentDenied">
+        <dc:Bounds x="277" y="340" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="C1_di" bpmnElement="C1">
+        <di:waypoint x="136" y="188"/>
+        <di:waypoint x="220" y="188"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="C2_di" bpmnElement="C2">
+        <di:waypoint x="370" y="188"/>
+        <di:waypoint x="470" y="188"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="C3_di" bpmnElement="C3">
+        <di:waypoint x="620" y="188"/>
+        <di:waypoint x="730" y="188"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="C4_di" bpmnElement="C4">
+        <di:waypoint x="295" y="248"/>
+        <di:waypoint x="295" y="340"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
